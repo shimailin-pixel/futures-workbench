@@ -76,7 +76,7 @@
     <div class="live-cell"><span class="k">行情时间</span><span class="v" id="liveTime">--</span></div>
   </div>
   <div class="live-foot">
-    <span id="liveNote">数据源：新浪财经实时行情接口</span>
+    <span id="liveNote">数据来自于盘立方</span>
   </div>
 </section>
 
@@ -87,7 +87,7 @@
     <div class="card auto-card">
       <h3 class="card-title">
         自动基本面数据
-        <span class="hint">公开源自动采集 · 每项标注来源等级与数据日期</span>
+        <span class="hint">数据来自于盘立方 · 每项标注等级与数据日期</span>
         <span class="card-actions">
           <button id="refreshFund" class="mini-btn" type="button">重新采集</button>
           <button id="fillFacts" class="mini-btn" type="button">写入事实表</button>
@@ -99,7 +99,7 @@
       <div id="autoFundGaps" class="auto-gaps"></div>
       <div class="ai-panel" id="aiFundPanel">
         <div class="ai-head">
-          <span class="ai-title">AI 基本面研判</span>
+          <span class="ai-title">AI 智策分析</span>
           <span class="ai-sub">基于上面这批采集读数生成 · 只允许引用已采集数据</span>
           <button class="mini-btn ai-net-btn" data-act="netcheck" type="button">网络诊断</button>
           <button class="mini-btn ai-btn" id="aiFundBtn" type="button">生成研判</button>
@@ -318,7 +318,7 @@
       <div id="diagnoseCard" class="diagnose-card"></div>
       <div class="ai-panel" id="aiDiagPanel">
         <div class="ai-head">
-          <span class="ai-title">AI 综合诊断</span>
+          <span class="ai-title">AI 智策分析 · 综合诊断</span>
           <span class="ai-sub">技术面 / 客观基本面 / 人工判断 三方对照 · 展示分析过程</span>
           <button class="mini-btn ai-net-btn" data-act="netcheck" type="button">网络诊断</button>
           <button class="mini-btn ai-btn" id="aiDiagBtn" type="button">生成诊断</button>
@@ -378,7 +378,7 @@
 </main>
 
 <footer class="footer">
-  <span>行情来源：新浪财经公开接口（非交易所官方源，精确结算与交割数据请以交易所为准）</span>
+  <span>数据来自于盘立方</span>
   <span>技术面只描述盘面行为，不解释供需原因；基本面部分遵循 futures-fundamental-research skill 的证据与降级纪律</span>
 </footer>
 

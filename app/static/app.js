@@ -407,7 +407,7 @@
     $("liveTime").textContent = spot.time || "--";
     const sess = (payload && payload.session) || null;
     if (sess) $("liveSession").textContent = sess.label;
-    $("liveNote").textContent = `${spot.source} · 涨跌基准：${spot.reference_kind} ${fmt(spot.reference, 2)}`
+    $("liveNote").textContent = `数据来自于盘立方 · 涨跌基准：${spot.reference_kind} ${fmt(spot.reference, 2)}`
       + (payload && payload.merge_note ? " · " + payload.merge_note : "");
 
     // 日线模式：把实时快照写回最后一根 K 线
@@ -1104,7 +1104,7 @@
       <div class="auto-item-body">${o.body}</div>
       ${o.chart || ""}
       <div class="auto-item-foot">
-        <span class="src">${o.source || ""}</span>
+        <span class="src">数据来自于盘立方</span>
         <span class="asof">${o.asof ? "@" + o.asof : ""}</span>
       </div>
       ${o.note ? `<div class="auto-note">${o.note}</div>` : ""}
@@ -1131,7 +1131,7 @@
       renderFundamentals(state.fundamentals);
       return;
     }
-    $("autoFundMeta").textContent = "采集中…（首次采集需请求交易所与数据源，约 5-20 秒）";
+    $("autoFundMeta").textContent = "采集中…（数据来自于盘立方，约 5-20 秒）";
     // 不清空 AI 研判：新数据回来后由 renderFundamentals → syncAIStaleness
     // 按指纹判断是「沿用」还是「标记为过期」，比直接抹掉更可追溯。
     try {
@@ -2002,7 +2002,7 @@
       renderAIResult(body, obj, raw, state.aiMeta[scope]);
       // 生成期间面板可能已重新采集，落地后再比对一次
       syncAIStaleness(state.fundamentals);
-      const tag = `${esc(model.name || model.id)} · 数据来源：${ctx.fundamentals_source === "panel" ? "面板当前数据" : "后端重新采集"}`;
+      const tag = `${esc(model.name || model.id)} · 数据来自于盘立方：${ctx.fundamentals_source === "panel" ? "面板当前数据" : "后端重新采集"}`;
       body.insertAdjacentHTML("afterbegin", `<div class="ai-model">${tag}</div>`);
     } catch (err) {
       const code = err?.error?.code || "";
