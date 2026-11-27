@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>期货分析工作台 · 技术面 + 基本面</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232c5f8d'/%3E%3Cpath d='M6 22 L12 13 L17 18 L26 8' stroke='%23fff' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">期</div>
+    <div class="brand-text">
+      <h1>期货分析工作台</h1>
+      <p>技术面 × 基本面 联合分析</p>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="control">
+      <label>品种</label>
+      <select id="symbolSelect"></select>
+    </div>
+    <div class="control">
+      <label>周期</label>
+      <div class="seg" id="intervalSeg">
+        <button data-iv="5m">5分</button>
+        <button data-iv="30m">30分</button>
+        <button data-iv="1h">小时</button>
+        <button data-iv="1d" class="active">日线</button>
+      </div>
+    </div>
+    <div class="control">
+      <label>样本</label>
+      <select id="countSelect">
+        <option value="120">120 根</option>
+        <option value="200">200 根</option>
+        <option value="300" selected>300 根</option>
+        <option value="500">500 根</option>
+      </select>
+    </div>
+    <button class="btn-refresh" id="refreshBtn">
+      <span class="ico">⟳</span> 刷新数据
+    </button>
+    <label class="switch" title="交易时段内每 2 秒推送一次实时行情">
+      <input type="checkbox" id="liveToggle" checked>
+      <span class="track"><span class="knob"></span></span>
+      <span class="switch-text">实时推送</span>
+    </label>
+  </div>
+
+  <div class="status" id="statusBar">
+    <span class="dot"></span><span id="statusText">等待加载…</span>
+  </div>
+</header>
+
+<!-- ================= 实时行情条 ================= -->
+<section class="livebar" id="liveBar">
+  <div class="live-main">
+    <span class="live-flag" id="liveFlag">实时</span>
+    <span class="live-price" id="livePrice">--</span>
+    <span class="live-change" id="liveChange">--</span>
+  </div>
+  <div class="live-grid">
+    <div class="live-cell"><span class="k">买一</span><span class="v" id="liveBid">--</span></div>
+    <div class="live-cell"><span class="k">卖一</span><span class="v" id="liveAsk">--</span></div>
+    <div class="live-cell"><span class="k">今开</span><span class="v" id="liveOpen">--</span></div>
+    <div class="live-cell"><span class="k">最高</span><span class="v" id="liveHigh">--</span></div>
+    <div class="live-cell"><span class="k">最低</span><span class="v" id="liveLow">--</span></div>
+    <div class="live-cell"><span class="k">均价</span><span class="v" id="liveAvg">--</span></div>
+    <div class="live-cell"><span class="k">成交量</span><span class="v" id="liveVol">--</span></div>
+    <div class="live-cell"><span class="k">持仓量</span><span class="v" id="liveOi">--</span></div>
+    <div class="live-cell"><span class="k">时段</span><span class="v" id="liveSession">--</span></div>
+    <div class="live-cell"><span class="k">行情时间</span><span class="v" id="liveTime">--</span></div>
+  </div>
+  <div class="live-foot">
+    <span id="liveNote">数据源：新浪财经实时行情接口</span>
+  </div>
+</section>
+
+<main class="layout">
+
+  <!-- ================= 自动基本面数据（横跨全宽） ================= -->
+  <section class="auto-band">
+    <div class="card auto-card">
+      <h3 class="card-title">
+        自动基本面数据
+        <span class="hint">公开源自动采集 · 每项标注来源等级与数据日期</span>
+        <span class="card-actions">
+          <button id="refreshFund" class="mini-btn" type="button">重新采集</button>
+          <button id="fillFacts" class="mini-btn" type="button">写入事实表</button>
+        </span>
+      </h3>
+      <div id="autoFundMeta" class="auto-meta">尚未采集</div>
+      <div id="autoFundSignal" class="auto-signal"></div>
+      <div id="autoFundCards" class="auto-grid"></div>
+      <div id="autoFundGaps" class="auto-gaps"></div>
+      <div class="ai-panel" id="aiFundPanel">
+        <div class="ai-head">
+          <span class="ai-title">AI 基本面研判</span>
+          <span class="ai-sub">基于上面这批采集读数生成 · 只允许引用已采集数据</span>
+          <button class="mini-btn ai-net-btn" data-act="netcheck" type="button">网络诊断</button>
+          <button class="mini-btn ai-btn" id="aiFundBtn" type="button">生成研判</button>
+        </div>
+        <div class="ai-body" id="aiFundBody"><span class="ai-placeholder">点击「生成研判」，模型将逐条复述读数并给出分析过程与结论</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 图表区 ================= -->
+  <section class="chart-pane">
+    <div class="chart-head">
+      <div class="quote-block">
+        <div class="quote-name">
+          <span id="qName">--</span>
+          <span class="quote-code" id="qCode"></span>
+          <span class="tag" id="qGroup"></span>
+        </div>
+        <div class="quote-price">
+          <span id="qPrice" class="price">--</span>
+          <span id="qChange" class="change">--</span>
+        </div>
+      </div>
+      <div class="quote-stats" id="quoteStats"></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-toolbar">
+        <div class="seg small" id="subChartSeg">
+          <button data-sub="macd" class="active">MACD</button>
+          <button data-sub="kdj">KDJ</button>
+          <button data-sub="rsi">RSI</button>
+          <button data-sub="none">隐藏副图</button>
+        </div>
+        <div class="chart-legend">
+          <span class="lg"><i class="sw ma5"></i>MA5</span>
+          <span class="lg"><i class="sw ma10"></i>MA10</span>
+          <span class="lg"><i class="sw ma20"></i>MA20</span>
+          <span class="lg"><i class="sw ma60"></i>MA60</span>
+          <span class="lg"><i class="sw boll"></i>BOLL</span>
+        </div>
+      </div>
+      <div class="chan-bar">
+        <button id="chanBtn" class="mini-btn chan-btn" type="button">叠加缠论</button>
+        <div class="chart-legend chan-legend" id="chanLegend"></div>
+      </div>
+      <div id="mainChart" class="chart-main"></div>
+      <div id="volChart" class="chart-vol"></div>
+      <div id="subChart" class="chart-sub"></div>
+    </div>
+
+    <!-- 缠论标注说明 -->
+    <div class="card chan-panel" id="chanPanel" hidden>
+      <h3 class="card-title">
+        缠论标注说明
+        <span class="hint">chan.py 官方开源版计算</span>
+      </h3>
+      <div class="chan-explain">
+        <div class="chan-item"><b>笔</b>：相邻顶底分型连线，最小级别的趋势单位。虚线表示尚未确认。</div>
+        <div class="chan-item"><b>线段</b>：至少三笔构成，由笔进一步划分出的更大结构。</div>
+        <div class="chan-item"><b>中枢</b>：至少三笔重叠的价格区间，橙色矩形。行情在区间内震荡，突破区间才是趋势。</div>
+        <div class="chan-item"><b>买点</b>：<span class="chan-buy">B1</span> 趋势背驰后的第一买点（相对最低）、
+          <span class="chan-buy">B2</span> 次低点不破前低的第二买点、
+          <span class="chan-buy">B3</span> 中枢突破后回抽不破中枢的第三买点。</div>
+        <div class="chan-item"><b>卖点</b>：<span class="chan-sell">S1</span> 趋势背驰后的第一卖点、
+          <span class="chan-sell">S2</span> 次高点不过前高的第二卖点、
+          <span class="chan-sell">S3</span> 跌破中枢后反抽不过的第三卖点。</div>
+        <div class="chan-item chan-warn">买卖点是<b>形态学标记</b>，不是交易信号：
+          它依赖缠论对走势的划分，而走势本身有多义性——同一段行情换个参数可能给出不同的笔。
+          请结合趋势结构、量能与基本面自行判断，不要把标注直接当成交易指令。</div>
+      </div>
+      <div id="chanStats" class="chan-stats"></div>
+    </div>
+
+    <div class="watch-row" id="watchRow"></div>
+  </section>
+
+  <!-- ================= 右侧面板 ================= -->
+  <aside class="side-pane">
+    <nav class="tabs" id="tabs">
+      <button data-tab="tech" class="active">技术面</button>
+      <button data-tab="fund">基本面</button>
+      <button data-tab="combine">综合诊断</button>
+      <button data-tab="term">期限结构</button>
+    </nav>
+
+    <!-- 技术面 -->
+    <div class="tab-panel active" data-panel="tech">
+      <div class="signal-card" id="signalCard"></div>
+      <div class="card">
+        <h3 class="card-title">信号明细</h3>
+        <div id="signalList" class="signal-list"></div>
+      </div>
+      <div class="card">
+        <h3 class="card-title">关键价位</h3>
+        <div id="levelsGrid" class="levels-grid"></div>
+      </div>
+      <div class="card">
+        <h3 class="card-title">研究提示</h3>
+        <div id="techNote" class="note-box"></div>
+      </div>
+    </div>
+
+    <!-- 基本面 -->
+    <div class="tab-panel" data-panel="fund">
+      <div class="card">
+        <h3 class="card-title">
+          决策面板
+          <span class="hint">对应 skill 的标准输出结构</span>
+        </h3>
+        <div class="form-grid">
+          <label class="field">
+            <span>当前倾向</span>
+            <select id="fBias">
+              <option value="">未判定</option>
+              <option value="偏多">偏多</option>
+              <option value="中性偏多">中性偏多</option>
+              <option value="中性">中性</option>
+              <option value="中性偏空">中性偏空</option>
+              <option value="偏空">偏空</option>
+              <option value="观望">观望</option>
+              <option value="只看结构">只看结构</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>时间边界</span>
+            <select id="fHorizon">
+              <option value="">未界定</option>
+              <option value="日内">日内</option>
+              <option value="1-3周">1-3 周</option>
+              <option value="1-3月">1-3 月</option>
+              <option value="季度以上">季度以上</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>结论置信度</span>
+            <select id="fConfidence">
+              <option value="">未判定</option>
+              <option value="高">高</option>
+              <option value="中">中</option>
+              <option value="低">低</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>数据截止日</span>
+            <input type="date" id="fDate">
+          </label>
+        </div>
+        <label class="field full">
+          <span>核心驱动（最多 3 条）</span>
+          <textarea id="fDrivers" rows="3" placeholder="1. …&#10;2. …&#10;3. …"></textarea>
+        </label>
+        <label class="field full">
+          <span>最大反证（最多 3 条）</span>
+          <textarea id="fCounter" rows="3" placeholder="什么数据一出来会立刻改判？"></textarea>
+        </label>
+        <label class="field full">
+          <span>下一步最该盯的数据</span>
+          <input type="text" id="fWatch" placeholder="例：铁水、港口库存、SHFE 仓单">
+        </label>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">
+          否决权变量
+          <span class="hint">与主叙事冲突则必须降级结论</span>
+        </h3>
+        <div id="vetoList" class="veto-list"></div>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">
+          事实与来源评级
+          <span class="hint">S/A/B/C/D 级 · 没有来源等级不下结论</span>
+        </h3>
+        <table class="fact-table">
+          <thead>
+            <tr><th style="width:58px">等级</th><th>事实内容</th><th style="width:150px">来源</th><th style="width:96px">日期</th><th style="width:34px"></th></tr>
+          </thead>
+          <tbody id="factBody"></tbody>
+        </table>
+        <button class="btn-ghost" id="addFact">+ 添加事实</button>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">交割与仓单（人工补充）</h3>
+        <div class="form-grid">
+          <label class="field"><span>仓单量</span><input type="text" id="fWarehouse" placeholder="例：12,345 手"></label>
+          <label class="field"><span>有效预报</span><input type="text" id="fForecast" placeholder="例：2,100 手"></label>
+          <label class="field"><span>虚实盘比</span><input type="text" id="fRatio" placeholder="近月持仓/仓单"></label>
+          <label class="field"><span>交割风险评级</span>
+            <select id="fRisk"><option value="">未评</option><option value="低">低</option><option value="中">中</option><option value="高">高</option></select>
+          </label>
+        </div>
+        <label class="field full">
+          <span>交割与结构备注</span>
+          <textarea id="fDelivery" rows="2" placeholder="交割资源、品牌限制、厂库/社库结构、规则变更…"></textarea>
+        </label>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">未验证信息</h3>
+        <div id="unverifiedList" class="unverified-list"></div>
+        <input type="text" id="addUnverified" placeholder="输入待验证线索，回车添加">
+      </div>
+
+      <div class="card actions-card">
+        <button class="btn-primary" id="saveResearch">保存研究记录</button>
+        <button class="btn-ghost" id="loadResearch">载入最新</button>
+        <span class="save-hint" id="saveHint"></span>
+      </div>
+    </div>
+
+    <!-- 综合诊断 -->
+    <div class="tab-panel" data-panel="combine">
+      <div id="diagnoseCard" class="diagnose-card"></div>
+      <div class="ai-panel" id="aiDiagPanel">
+        <div class="ai-head">
+          <span class="ai-title">AI 综合诊断</span>
+          <span class="ai-sub">技术面 / 客观基本面 / 人工判断 三方对照 · 展示分析过程</span>
+          <button class="mini-btn ai-net-btn" data-act="netcheck" type="button">网络诊断</button>
+          <button class="mini-btn ai-btn" id="aiDiagBtn" type="button">生成诊断</button>
+        </div>
+        <div class="ai-body" id="aiDiagBody"><span class="ai-placeholder">点击「生成诊断」，模型将逐步对照三方证据并写出结论</span></div>
+      </div>
+      <div class="card">
+        <h3 class="card-title">技术面摘要</h3>
+        <div id="combineTech" class="summary-box"></div>
+      </div>
+      <div class="card">
+        <h3 class="card-title">纪律检查</h3>
+        <ul class="check-list">
+          <li>是否已区分事实与推断</li>
+          <li>是否点出否决权变量并确认状态</li>
+          <li>是否写明多数派叙事与少数派线索的验证状态</li>
+          <li>是否写明时间边界</li>
+          <li>是否写出失效条件与改判触发点</li>
+          <li>近月是否已核对仓单、有效预报、月差与交割规则</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 class="card-title">研究日志</h3>
+        <div id="researchLog" class="research-log"></div>
+      </div>
+    </div>
+
+    <!-- 期限结构 -->
+    <div class="tab-panel" data-panel="term">
+      <div class="card">
+        <h3 class="card-title">
+          期限结构与月差
+          <span class="hint">近月 / 主力 / 远月</span>
+          <span class="card-actions">
+            <button id="termExpand" class="mini-btn" type="button">展开大图</button>
+          </span>
+        </h3>
+        <div id="termShape" class="term-shape"></div>
+        <div id="termChart" class="chart-term"></div>
+        <div class="chart-legend term-legend" id="termLegend"></div>
+        <div class="term-excl" id="termExcl" hidden></div>
+        <div id="termExplain" class="term-explain"></div>
+        <div id="termTable" class="term-table-wrap"></div>
+        <p class="foot-note" id="termFoot"></p>
+      </div>
+      <div class="card">
+        <h3 class="card-title">结构风险提示</h3>
+        <ul class="risk-list">
+          <li><b>近月孤岛</b>：近月明显强于整条曲线，可能是挤仓而非供需转紧</li>
+          <li><b>远月叙事抬升</b>：远月强于近月，是预期交易而非现货紧张</li>
+          <li><b>结构与现货背离</b>：现货与基差不强，但月差极端扭曲，多为资金驱动</li>
+          <li><b>仓单集中度</b>：低总量高集中度比高总量更危险</li>
+        </ul>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<footer class="footer">
+  <span>行情来源：新浪财经公开接口（非交易所官方源，精确结算与交割数据请以交易所为准）</span>
+  <span>技术面只描述盘面行为，不解释供需原因；基本面部分遵循 futures-fundamental-research skill 的证据与降级纪律</span>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<!-- 期限结构大图 -->
+<div class="term-modal" id="termModal" hidden>
+  <div class="term-modal-box">
+    <div class="term-modal-head">
+      <span class="term-modal-title" id="termModalTitle">期限结构曲线</span>
+      <button class="mini-btn" id="termModalClose" type="button">关闭</button>
+    </div>
+    <div id="termModalChart" class="chart-term-lg"></div>
+    <div class="term-modal-foot" id="termModalFoot"></div>
+  </div>
+</div>
+
+<!-- 网络自诊断结果卡：任何标签页都能看到 -->
+<div class="ai-net-card" id="aiNetCard" hidden></div>
+
+<script src="/static/echarts.min.js"></script>
+<!-- 云服务 SDK（免密钥大模型调用）。本地副本，离线可用；CDN 同版本号备用 -->
+<script src="/static/vendor/workbuddy-cloud-sdk.global.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

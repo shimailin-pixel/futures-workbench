@@ -1,0 +1,8 @@
+# 云端沙箱预装 akshare 1.18.22，与本机 1.20.70 的参数名/字段名不一致
+# （1.18.x 用 start_day/end_day、dominant_basis；1.20.x 用 start_date/end_date、dom_basis），
+# 会导致现货基差取不到数据。
+#
+# 注意版本上限：akshare 1.20.40 起 Requires-Python >= 3.11.5，
+# 而云端沙箱是 Python 3.11.1，装 1.20.40+ 会被 pip 直接拒绝。
+# 1.20.39 是最后一个支持 3.11.1 的版本。
+akshare==1.20.39
